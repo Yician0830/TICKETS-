@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>TICKET MEMORY — 演唱會日記</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+  :root{
+    --stage-black:#ffffff;
+    --stage-black-2:#f5eefc;
+    --spotlight:#7c3aed;
+    --ticket-cream:#4c1d95;
+    --stage-magenta:#9333ea;
+    --ink-teal:#6b21a8;
+    --muted:#9b87b8;
+    --line:#e4d6f5;
+    --paper:#fdf8ef;
+  }
+  *{box-sizing:border-box;}
+  input, select, textarea, button{font-weight:700; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  html,body{
+    margin:0;padding:0;
+    background:var(--stage-black-2);
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+    font-weight:700;
+    color:var(--ticket-cream);
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ambient light-purple backdrop */
+  body{
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 0%, rgba(124,58,237,0.08), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(147,51,234,0.08), transparent 60%),
+      #f8f4fc;
+    padding:32px 12px;
+  }
+
+  .phone{
+    width:390px;
+    max-width:100%;
+    height:820px;
+    max-height:92vh;
+    background:var(--stage-black);
+    border-radius:44px;
+    border:8px solid #0b0a0d;
+    box-shadow:0 40px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .notch{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:120px; height:22px; background:#0b0a0d; border-radius:0 0 16px 16px; z-index:50;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    padding:34px 22px 10px;
+    display:flex; align-items:baseline; justify-content:space-between;
+    flex-shrink:0;
+  }
+  .brand{
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+    font-size:19px; letter-spacing:1.5px; color:var(--spotlight);
+    display:flex; align-items:center; gap:6px;
+  }
+  .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--stage-magenta);display:inline-block;box-shadow:0 0 8px var(--stage-magenta);}
+  .screen-label{font-size:11px;color:var(--muted);letter-spacing:2px;font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+
+  /* ---------- scroll area ---------- */
+  .screen{
+    flex:1; overflow-y:auto; padding:6px 20px 20px;
+    scrollbar-width:none;
+  }
+  .screen::-webkit-scrollbar{display:none;}
+
+  h1.page-title{
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+    font-size:34px; letter-spacing:1px; margin:6px 0 4px;
+    color:var(--ticket-cream);
+  }
+  .page-sub{color:var(--muted); font-size:12.5px; margin:0 0 18px; letter-spacing:.3px;}
+
+  /* ================= DIARY (flip photo grid, max 3 per row) ================= */
+  .diary-grid{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
+  }
+  .flip-card{
+    position:relative; aspect-ratio:3/4; cursor:pointer;
+    perspective:900px;
+  }
+  .flip-inner{
+    position:relative; width:100%; height:100%;
+    transition:transform .55s cubic-bezier(.4,.2,.2,1);
+    transform-style:preserve-3d;
+    border-radius:12px;
+    box-shadow:0 4px 14px rgba(76,29,149,0.18);
+  }
+  .flip-card.flipped .flip-inner{transform:rotateY(180deg);}
+  .flip-face{
+    position:absolute; inset:0;
+    backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    border-radius:12px; overflow:hidden;
+  }
+  .flip-front{
+    background-size:cover; background-position:center;
+    background-color:var(--stage-black);
+  }
+  .ph1{background:linear-gradient(135deg,#9b6bde,#c9a6f2);}
+  .ph2{background:linear-gradient(135deg,#2f4858,#5b7f99);}
+  .ph3{background:linear-gradient(135deg,#6a4c93,#9b6bde);}
+  .ph4{background:linear-gradient(135deg,#4a3f5c,#8a6bc9);}
+  .ph5{background:linear-gradient(135deg,#5b3a5c,#c9a6f2);}
+  .flip-back{
+    transform:rotateY(180deg);
+    background:var(--paper); color:var(--ticket-cream);
+    padding:10px 9px 9px; display:flex; flex-direction:column;
+    border:1px solid var(--line);
+  }
+  .flip-back .back-tour{
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:14.5px; line-height:1.15;
+    color:var(--ink-teal); letter-spacing:.2px;
+  }
+  .flip-back .back-meta{font-size:9px; color:var(--muted); margin-top:6px; line-height:1.6; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .back-more-btn{
+    margin-top:auto; align-self:flex-start;
+    background:rgba(147,51,234,0.14); border:1px solid var(--stage-magenta); color:var(--stage-magenta);
+    font-size:9px; font-weight:700; padding:4px 10px; border-radius:14px; cursor:pointer;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+  }
+
+  /* ---------- diary detail modal ---------- */
+  .detail-poster{
+    width:100%; aspect-ratio:4/3; border-radius:12px;
+    background-size:cover; background-position:center; background-color:var(--stage-black-2);
+    border:1px solid var(--line); margin-bottom:14px;
+  }
+  .detail-setlist-box{
+    font-size:12.5px; color:var(--ticket-cream); line-height:1.7;
+    background:var(--stage-black-2); border:1px solid var(--line); border-radius:10px;
+    padding:11px 14px; white-space:pre-line;
+  }
+
+  .diary-header-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;}
+  .streak-pill{
+    background:rgba(124,58,237,0.12); color:var(--spotlight);
+    border:1px solid rgba(124,58,237,0.4);
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:11px;
+    padding:5px 10px; border-radius:20px;
+  }
+
+  /* ================= ADD / SCAN ================= */
+  .scan-frame{
+    margin-top:6px;
+    aspect-ratio:3/4;
+    border-radius:20px;
+    background:
+      linear-gradient(180deg, rgba(124,58,237,0.10), rgba(124,58,237,0) 40%),
+      #efe6fb;
+    border:1px solid var(--line);
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .scan-frame .corner{position:absolute; width:26px; height:26px; border:3px solid var(--spotlight);}
+  .scan-frame .c1{top:16px;left:16px;border-right:none;border-bottom:none;border-radius:6px 0 0 0;}
+  .scan-frame .c2{top:16px;right:16px;border-left:none;border-bottom:none;border-radius:0 6px 0 0;}
+  .scan-frame .c3{bottom:16px;left:16px;border-right:none;border-top:none;border-radius:0 0 0 6px;}
+  .scan-frame .c4{bottom:16px;right:16px;border-left:none;border-top:none;border-radius:0 0 6px 0;}
+  .scan-line{
+    position:absolute; left:16px; right:16px; height:2px;
+    background:linear-gradient(90deg,transparent,var(--stage-magenta),transparent);
+    box-shadow:0 0 10px var(--stage-magenta);
+    animation:scan 2.6s ease-in-out infinite;
+  }
+  @keyframes scan{
+    0%,100%{top:20%;}
+    50%{top:78%;}
+  }
+  .scan-hint{position:absolute; bottom:34px; text-align:center; font-size:11.5px; color:var(--muted); padding:0 40px;}
+  .scan-ticket-ghost{
+    width:70%; aspect-ratio:16/10; border:1px dashed rgba(76,29,149,0.3); border-radius:10px;
+  }
+
+  .field-group{margin-top:20px;}
+  .field-label{font-size:11px; color:var(--muted); letter-spacing:1px; margin-bottom:6px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .field-value{
+    background:var(--stage-black-2); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; font-size:14px; display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+  }
+  .field-value .detected{color:var(--spotlight); font-size:10px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+
+  .upload-box{
+    display:flex; align-items:center; gap:12px;
+    background:var(--stage-black-2); border:1px dashed var(--line); border-radius:12px;
+    padding:12px 14px; cursor:pointer; margin-bottom:10px;
+  }
+  .upload-box:hover{border-color:var(--spotlight);}
+  .upload-box .thumb{
+    width:48px;height:48px;border-radius:8px;flex-shrink:0;
+    background-size:cover;background-position:center;
+    background-color:var(--stage-black); border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted);
+  }
+  .upload-box .info{flex:1;min-width:0;}
+  .upload-box .info .t{font-size:12.5px;color:var(--ticket-cream);font-weight:700;}
+  .upload-box .info .s{font-size:10.5px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .btn-primary{
+    display:block; width:100%; text-align:center;
+    background:var(--stage-magenta); color:#ffffff; font-weight:700;
+    border:none; border-radius:12px; padding:14px; font-size:14.5px;
+    margin-top:18px; letter-spacing:.5px; cursor:pointer;
+  }
+
+  /* ================= STATS ================= */
+  .big-count{
+    text-align:center; margin:18px 0 22px;
+  }
+  .big-count .n{font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:74px; color:var(--spotlight); line-height:1;}
+  .big-count .l{font-size:12px; color:var(--muted); letter-spacing:2px;}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:22px;}
+  .stat-box{
+    background:var(--stage-black-2); border:1px solid var(--line); border-radius:12px;
+    padding:14px;
+  }
+  .stat-box .n{font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:26px; color:var(--ticket-cream);}
+  .stat-box .l{font-size:10.5px; color:var(--muted); margin-top:2px;}
+  .section-title{
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:17px; letter-spacing:.5px;
+    color:var(--ticket-cream); margin:18px 0 10px; display:flex; align-items:center; gap:8px;
+  }
+  .section-title .bar{width:4px;height:16px;background:var(--stage-magenta); display:inline-block; border-radius:2px;}
+  .rank-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--line); font-size:13px;
+  }
+  .rank-row .name{color:var(--ticket-cream);}
+  .rank-row .n{font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; color:var(--spotlight); font-size:12px;}
+  .badge-row{display:flex; gap:10px; margin-top:6px;}
+  .badge{
+    flex:1; text-align:center; background:var(--stage-black-2); border:1px solid var(--line);
+    border-radius:12px; padding:12px 6px; cursor:pointer;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; color:inherit;
+  }
+  .badge:active{border-color:var(--spotlight); background:rgba(124,58,237,0.1);}
+  .badge .ic{font-size:20px;}
+  .badge .t{font-size:9.5px; color:var(--muted); margin-top:4px;}
+
+  /* ---------- badge detail modal ---------- */
+  .badge-detail-icon{font-size:40px; text-align:center; margin-bottom:10px;}
+  .badge-detail-row{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--stage-black-2); border:1px solid var(--line); border-radius:10px;
+    padding:11px 14px; font-size:13px; margin-bottom:8px;
+  }
+  .badge-detail-row span:first-child{color:var(--muted); font-size:11px;}
+  .badge-detail-row span:last-child{color:var(--ticket-cream); font-weight:700;}
+
+  /* ---------- editable "detected" fields (scan tab) ---------- */
+  .detected-input{
+    background:transparent; border:none; color:var(--spotlight);
+    font-size:12.5px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; text-align:right;
+    width:56%; outline:none; padding:2px 0; color-scheme:light;
+  }
+  .detected-input:focus{color:var(--ticket-cream);}
+  select.detected-input{
+    background:transparent; border:none; color:var(--spotlight);
+    font-size:12.5px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; text-align:right;
+    outline:none; appearance:none; -webkit-appearance:none;
+  }
+  .field-value.amount-row{
+    border-color:rgba(124,58,237,0.45); background:rgba(124,58,237,0.08);
+  }
+  .amount-input{font-weight:700; font-size:14.5px;}
+
+  /* ================= SPEND STATS ================= */
+  .stat-box.spend-alltime{
+    grid-column:1 / 3; display:flex; align-items:center; justify-content:space-between;
+  }
+  .stat-box.spend-alltime .l{margin-top:0;}
+  .stat-box.spend-alltime .n{font-size:24px;}
+  .spend-summary{text-align:center; margin:14px 0 20px;}
+  .spend-summary-label{font-size:11px; color:var(--muted); letter-spacing:1px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .spend-summary-amt{font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:46px; color:var(--spotlight); line-height:1.1; margin-top:4px;}
+  .spend-row{margin-bottom:14px;}
+  .spend-row-top{display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; margin-bottom:5px;}
+  .spend-period{color:var(--ticket-cream); font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .spend-amt{color:var(--spotlight); font-weight:700; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .spend-bar{height:6px; background:var(--line); border-radius:4px; overflow:hidden;}
+  .spend-bar div{height:100%; background:linear-gradient(90deg,var(--stage-magenta),var(--spotlight));}
+  .spend-meta{font-size:10px; color:var(--muted); margin-top:4px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+
+  /* ================= LOTTERY ================= */
+  .lot-card{
+    background:var(--stage-black-2); border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; margin-bottom:12px; position:relative; overflow:hidden;
+  }
+  .lot-card.urgent{border-color:rgba(147,51,234,0.5); background:linear-gradient(135deg, rgba(147,51,234,0.08), var(--stage-black-2));}
+  .lot-card.critical{
+    border-color:rgba(255,90,90,0.65);
+    background:linear-gradient(135deg, rgba(255,90,90,0.14), var(--stage-black-2));
+    animation:criticalPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes criticalPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,90,90,0.35);}
+    50%{box-shadow:0 0 0 6px rgba(255,90,90,0);}
+  }
+  .lot-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .lot-name{font-size:14.5px; font-weight:700; color:var(--ticket-cream);}
+  .lot-venue{font-size:11px; color:var(--muted); margin-top:2px;}
+  .lot-count{
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:11px;
+    padding:4px 9px; border-radius:20px; white-space:nowrap;
+  }
+  .lot-count.d1{background:rgba(147,51,234,0.18); color:var(--stage-magenta);}
+  .lot-count.d2{background:rgba(124,58,237,0.15); color:var(--spotlight);}
+  .lot-count.critical{
+    background:rgba(255,90,90,0.22); color:#ff6b6b; font-weight:700;
+    box-shadow:0 0 8px rgba(255,90,90,0.35);
+  }
+  .lot-bar{height:4px; background:var(--line); border-radius:4px; margin-top:12px; overflow:hidden;}
+  .lot-bar div{height:100%; background:var(--spotlight);}
+  .lot-card.critical .lot-bar div{background:#ff6b6b;}
+  .lot-foot{display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:6px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .lot-foot .critical-text{color:#ff6b6b; font-weight:700;}
+
+  /* ---------- ticket filter chips ---------- */
+  .filter-row{display:flex; gap:8px; margin-bottom:16px;}
+  .chip{
+    background:var(--stage-black-2); border:1px solid var(--line); color:var(--muted);
+    font-size:12px; padding:7px 16px; border-radius:20px; cursor:pointer;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+  }
+  .chip.active{background:rgba(124,58,237,0.15); border-color:var(--spotlight); color:var(--spotlight); font-weight:700;}
+
+  /* ---------- sale info cards ---------- */
+  .sale-card{
+    background:var(--stage-black-2); border:1px solid var(--line); border-radius:14px;
+    padding:15px 16px; margin-bottom:12px;
+  }
+  .sale-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .region-tag{font-size:11.5px; color:var(--ticket-cream); font-weight:700;}
+  .platform-tag{
+    font-size:10px; color:var(--muted); border:1px solid var(--line);
+    padding:3px 9px; border-radius:20px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+  }
+  .sale-name{font-size:14.5px; font-weight:700; color:var(--ticket-cream);}
+  .sale-venue{font-size:11px; color:var(--muted); margin-top:2px; margin-bottom:10px;}
+  .sale-phase-row{display:flex; justify-content:space-between; align-items:center; margin-top:6px;}
+  .phase-pill{
+    font-size:10.5px; padding:4px 10px; border-radius:20px; font-weight:700;
+  }
+  .phase-pill.member{background:rgba(147,51,234,0.18); color:var(--stage-magenta);}
+  .phase-pill.general{background:rgba(124,58,237,0.15); color:var(--spotlight);}
+  .phase-date{font-size:11.5px; color:var(--ticket-cream); font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .sale-note{font-size:10.5px; color:var(--muted); margin:6px 0 2px; line-height:1.5;}
+  .sale-status{
+    margin-top:12px; font-size:11px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+    padding-top:10px; border-top:1px dashed var(--line);
+  }
+  .sale-status.upcoming{color:var(--muted);}
+  .sale-status.live{color:var(--spotlight);}
+  .sale-status.closed{color:var(--muted); text-decoration:line-through; opacity:.7;}
+  .sale-realname{
+    margin-top:8px; font-size:10.5px; color:var(--spotlight);
+    padding-top:8px; border-top:1px dashed var(--line); font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+  }
+  .sale-realname.none{color:var(--muted);}
+
+  /* ---------- modal checkbox row ---------- */
+  .checkbox-row{
+    display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ticket-cream);
+    margin-bottom:14px; cursor:pointer;
+  }
+  .checkbox-row input[type="checkbox"]{
+    width:17px; height:17px; accent-color:var(--spotlight); cursor:pointer;
+  }
+
+  /* ---------- pickup reminder cards ---------- */
+  .pickup-card{
+    background:var(--stage-black-2); border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; margin-bottom:12px;
+  }
+  .pickup-card.urgent{
+    border-color:rgba(147,51,234,0.6);
+    background:linear-gradient(135deg, rgba(147,51,234,0.10), var(--stage-black-2));
+    animation:pickupPulse 2s ease-in-out infinite;
+  }
+  @keyframes pickupPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(147,51,234,0.35);}
+    50%{box-shadow:0 0 0 7px rgba(147,51,234,0);}
+  }
+  .push-banner{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:10px; font-weight:700; color:var(--stage-magenta);
+    background:rgba(147,51,234,0.18);
+    padding:4px 10px; border-radius:20px; margin-bottom:10px;
+    animation:pushBg 1.6s ease-in-out infinite;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+  }
+  @keyframes pushBg{
+    0%,100%{background:rgba(147,51,234,0.18);}
+    50%{background:rgba(147,51,234,0.38);}
+  }
+  .blink-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--stage-magenta); display:inline-block;
+    animation:blinkDot 1.1s ease-in-out infinite;
+  }
+  @keyframes blinkDot{0%,100%{opacity:1;} 50%{opacity:.25;}}
+
+  .pickup-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .pickup-name{font-size:14.5px; font-weight:700; color:var(--ticket-cream);}
+  .pickup-method{font-size:11px; color:var(--muted); margin-top:2px;}
+  .pickup-code-wrap{display:flex; align-items:center; gap:6px; flex-shrink:0;}
+  .pickup-code{
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:11px; color:var(--spotlight);
+    background:rgba(124,58,237,0.12); padding:5px 10px; border-radius:6px; white-space:nowrap;
+  }
+  .pickup-link{
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:11px; color:var(--spotlight);
+    background:rgba(124,58,237,0.12); padding:5px 10px; border-radius:6px; white-space:nowrap;
+    text-decoration:none; flex-shrink:0; border:1px solid transparent;
+  }
+  .pickup-link:hover{border-color:var(--spotlight);}
+  .pickup-link.disabled{
+    opacity:.4; cursor:not-allowed; color:var(--muted); background:rgba(76,29,149,0.06);
+  }
+  .pickup-showdates{font-size:10px; color:var(--muted); margin-top:6px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .pickup-deadline{margin-top:10px; font-size:11px; color:var(--muted); font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;}
+  .pickup-status{
+    margin-top:8px; font-size:11px; font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+    padding-top:8px; border-top:1px dashed var(--line);
+  }
+  .pickup-status.pending{color:var(--stage-magenta);}
+  .pickup-status.done{color:var(--spotlight);}
+  .pickup-status.shipping{color:var(--muted);}
+  .pickup-actions{display:flex; gap:8px; margin-top:12px;}
+  .pickup-btn{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:5px;
+    background:var(--stage-black); border:1px solid var(--line); color:var(--ticket-cream);
+    font-size:11px; padding:8px 6px; border-radius:8px; cursor:pointer;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+  }
+  .pickup-btn.active{background:rgba(124,58,237,0.15); border-color:var(--spotlight); color:var(--spotlight);}
+
+  /* ---------- pickup: 取票狀態 tag & 票券來源 ---------- */
+  .pickup-status-tag{
+    display:inline-block; font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; margin-bottom:9px; letter-spacing:.3px;
+  }
+  .pickup-status-tag.notopen{background:rgba(74,222,128,0.15); color:#4ade80;}
+  .pickup-status-tag.available{background:rgba(255,210,60,0.20); color:#ffd23c;}
+  .pickup-status-tag.closing{background:rgba(255,90,90,0.22); color:#ff6b6b;}
+
+  .pickup-source{
+    font-size:10.5px; color:var(--muted); margin-top:9px; padding-top:9px;
+    border-top:1px dashed var(--line); line-height:1.6;
+  }
+  .pickup-source .seller{color:var(--spotlight); font-weight:700;}
+  .pickup-source .tag-self{color:var(--ticket-cream); font-weight:700;}
+  .pickup-date-setting{font-size:10.5px; color:var(--muted); margin-top:6px;}
+  .pickup-date-setting b{color:var(--ticket-cream); font-weight:700;}
+
+  /* ---------- section header with add button ---------- */
+  .section-title-row{display:flex; justify-content:space-between; align-items:center; margin:18px 0 10px;}
+  .section-title-row .section-title{margin:0;}
+  .add-btn{
+    background:rgba(124,58,237,0.15); border:1px solid var(--spotlight); color:var(--spotlight);
+    font-size:11.5px; font-weight:700; padding:6px 13px; border-radius:20px; cursor:pointer;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif;
+  }
+
+  /* ---------- add-info modal (bottom sheet) ---------- */
+  .modal-overlay{
+    position:absolute; inset:0; background:rgba(0,0,0,0.55);
+    display:none; align-items:flex-end; z-index:200;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-sheet{
+    width:100%; max-height:88%; overflow-y:auto;
+    background:var(--stage-black); border-radius:24px 24px 0 0;
+    padding:20px 20px 28px; border-top:1px solid var(--line);
+  }
+  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+  .modal-title{font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:20px; letter-spacing:.5px; color:var(--ticket-cream);}
+  .modal-close{
+    background:var(--stage-black-2); border:1px solid var(--line); color:var(--muted);
+    width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:13px;
+  }
+  .modal-input{
+    width:100%; background:var(--stage-black-2); border:1px solid var(--line); border-radius:10px;
+    padding:11px 14px; font-size:13.5px; color:var(--ticket-cream); margin-bottom:14px;
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; appearance:none;
+  }
+  .modal-input:focus{outline:none; border-color:var(--spotlight);}
+  select.modal-input{
+    background-image:linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position:calc(100% - 18px) center, calc(100% - 13px) center;
+    background-size:5px 5px, 5px 5px; background-repeat:no-repeat;
+  }
+
+  /* ---------- bottom nav ---------- */
+  .navbar{
+    flex-shrink:0; display:flex; padding:10px 8px 18px;
+    background:rgba(255,255,255,0.85); border-top:1px solid var(--line);
+    backdrop-filter:blur(6px);
+  }
+  .navbtn{
+    flex:1; text-align:center; background:none; border:none; color:var(--muted);
+    font-family:'Microsoft JhengHei','PingFang TC','Heiti TC',sans-serif; font-size:10.5px; cursor:pointer; padding:6px 2px;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .navbtn .ic{font-size:19px;}
+  .navbtn.active{color:var(--spotlight);}
+  .navbtn.active .ic{filter:drop-shadow(0 0 6px rgba(124,58,237,0.6));}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span>TICKET MEMORY</div>
+    <div class="screen-label" id="screenLabel">TICKETS</div>
+  </div>
+
+  <div class="screen">
+
+    <!-- ============ TAB 1: DIARY ============ -->
+    <div class="tab-panel" id="tab-diary">
+      <div class="diary-header-row">
+        <h1 class="page-title">巡演日記</h1>
+        <span class="streak-pill">連續 3 個月看團 🔥</span>
+      </div>
+      <p class="page-sub">每張票根，都是一場還沒散場的演唱會</p>
+
+      <p class="page-sub" style="margin-top:-14px;margin-bottom:14px;color:var(--muted);font-size:11px;">點一張圖，翻到背面看詳細資訊</p>
+
+      <div class="diary-grid" id="diaryList">
+      <div class="flip-card"
+           onclick="this.classList.toggle('flipped')"
+           data-tour="告五人 Accusefive"
+           data-artist="《九號球》世界巡迴演唱會 — 台北場"
+           data-date="2026.05.17"
+           data-venue="台北大巨蛋"
+           data-seat="3樓 B區 12排 8號"
+           data-amount="5800"
+           data-fee="65"
+           data-ticketsystem="拓元 tixCraft"
+           data-setlist="安可｜披星戴月的想你・帶你去見我媽・在這座城市遺失了你">
+        <div class="flip-inner">
+          <div class="flip-face flip-front ph1"></div>
+          <div class="flip-face flip-back">
+            <div class="back-tour">告五人 Accusefive</div>
+            <div class="back-meta">2026.05.17<br>台北大巨蛋</div>
+            <button class="back-more-btn" onclick="event.stopPropagation(); openDiaryDetail(this)">查看更多</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flip-card"
+           onclick="this.classList.toggle('flipped')"
+           data-tour="米津玄師"
+           data-artist="JUNK LAND TOUR — 東京巨蛋"
+           data-date="2026.04.02"
+           data-venue="東京ドーム"
+           data-seat=""
+           data-amount="6200"
+           data-fee="0"
+           data-ticketsystem="ぴあ Pia"
+           data-setlist="安可｜KICK BACK・Lemon・パプリカ">
+        <div class="flip-inner">
+          <div class="flip-face flip-front ph2"></div>
+          <div class="flip-face flip-back">
+            <div class="back-tour">米津玄師</div>
+            <div class="back-meta">2026.04.02<br>東京ドーム</div>
+            <button class="back-more-btn" onclick="event.stopPropagation(); openDiaryDetail(this)">查看更多</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flip-card"
+           onclick="this.classList.toggle('flipped')"
+           data-tour="草東沒有派對"
+           data-artist="醜奴兒 專場 — Legacy"
+           data-date="2026.02.28"
+           data-venue="Legacy Taipei"
+           data-seat=""
+           data-amount="1600"
+           data-fee="30"
+           data-ticketsystem="KKTIX"
+           data-setlist="安可｜大風吹・爛泥">
+        <div class="flip-inner">
+          <div class="flip-face flip-front ph3"></div>
+          <div class="flip-face flip-back">
+            <div class="back-tour">草東沒有派對</div>
+            <div class="back-meta">2026.02.28<br>Legacy Taipei</div>
+            <button class="back-more-btn" onclick="event.stopPropagation(); openDiaryDetail(this)">查看更多</button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- ============ TAB 2: SCAN / ADD ============ -->
+    <div class="tab-panel" id="tab-add">
+      <h1 class="page-title">新增票根</h1>
+      <p class="page-sub">拍下票根，資訊自動幫你填好</p>
+
+      <div class="scan-frame">
+        <div class="corner c1"></div><div class="corner c2"></div>
+        <div class="corner c3"></div><div class="corner c4"></div>
+        <div class="scan-ticket-ghost"></div>
+        <div class="scan-line"></div>
+        <div class="scan-hint">將票根對準框內，會自動辨識場次與座位</div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">上傳圖片（將顯示於日記卡片，可分開上傳）</div>
+
+        <label class="upload-box" for="posterUpload">
+          <div class="thumb" id="posterThumb">🖼️</div>
+          <div class="info">
+            <div class="t">演唱會海報</div>
+            <div class="s" id="posterFileName">尚未選擇圖片</div>
+          </div>
+        </label>
+        <input type="file" id="posterUpload" accept="image/*" style="display:none" onchange="handleImageUpload(event,'poster')">
+
+        <label class="upload-box" for="livePhotoUpload">
+          <div class="thumb" id="liveThumb">📸</div>
+          <div class="info">
+            <div class="t">演唱會現場紀錄</div>
+            <div class="s" id="liveFileName">尚未選擇圖片</div>
+          </div>
+        </label>
+        <input type="file" id="livePhotoUpload" accept="image/*" style="display:none" onchange="handleImageUpload(event,'live')">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">辨識結果（可手動修改）</div>
+        <div class="field-value"><span>樂團 / 演出</span><input class="detected-input" id="scanTour" type="text" value="告五人 Accusefive"></div>
+        <div class="field-value"><span>巡演場次</span><input class="detected-input" id="scanArtist" type="text" value="《九號球》世界巡迴演唱會 — 台北場"></div>
+        <div class="field-value"><span>日期</span><input class="detected-input" id="scanDate" type="date" value="2026-05-17"></div>
+        <div class="field-value"><span>場館</span><input class="detected-input" id="scanVenue" type="text" value="台北大巨蛋"></div>
+        <div class="field-value"><span>座位</span><input class="detected-input" id="scanSeat" type="text" value="3樓 B區 12排 8號"></div>
+        <div class="field-value"><span>🎵 演唱會歌單</span><input class="detected-input" id="scanSetlist" type="text" placeholder="例如：安可｜披星戴月的想你" style="width:56%;"></div>
+        <div class="field-value">
+          <span>🎫 購票系統</span>
+          <select class="detected-input" id="scanTicketSystem" onchange="toggleCustomTicketSystem()">
+            <option value="拓元 tixCraft">拓元 tixCraft</option>
+            <option value="KKTIX">KKTIX</option>
+            <option value="IBON">IBON</option>
+            <option value="遠大">遠大</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="field-value" id="customTicketSystemRow" style="display:none;">
+          <span>系統名稱</span>
+          <input class="detected-input" id="scanTicketSystemOther" type="text" placeholder="請輸入購票系統名稱">
+        </div>
+        <div class="field-value"><span>💳 購票手續費</span><input class="detected-input" id="scanFee" type="text" inputmode="numeric" placeholder="輸入手續費" value="65"></div>
+        <div class="field-value amount-row"><span>💰 票根金額</span><input class="detected-input amount-input" id="scanAmount" type="text" inputmode="numeric" placeholder="輸入金額" value="5800"></div>
+      </div>
+
+      <button class="btn-primary" onclick="submitScanTicket()">確認並加入日記 →</button>
+    </div>
+
+    <!-- ============ TAB 3: STATS ============ -->
+    <div class="tab-panel" id="tab-stats">
+      <h1 class="page-title">我的紀錄</h1>
+      <p class="page-sub">累積的不只是票根，是走過的每一場現場</p>
+
+      <div class="big-count">
+        <div class="n">47</div>
+        <div class="l">歷年總場次</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="n">18</div><div class="l">不同場館</div></div>
+        <div class="stat-box"><div class="n">23</div><div class="l">不同演出者</div></div>
+        <div class="stat-box"><div class="n">6</div><div class="l">今年已看場次</div></div>
+        <div class="stat-box"><div class="n">2</div><div class="l">跨國追團</div></div>
+        <div class="stat-box spend-alltime">
+          <div class="l">歷年總花費</div>
+          <div class="n" id="spendAllTimeTotal">NT$0</div>
+        </div>
+      </div>
+
+      <div class="section-title"><span class="bar"></span>看最多次的演出者</div>
+      <div class="rank-row"><span class="name">告五人 Accusefive</span><span class="n">7 場</span></div>
+      <div class="rank-row"><span class="name">草東沒有派對</span><span class="n">5 場</span></div>
+      <div class="rank-row"><span class="name">米津玄師</span><span class="n">4 場</span></div>
+
+      <div class="section-title"><span class="bar"></span>花費統計</div>
+      <div class="filter-row">
+        <button class="chip active" data-gran="month" onclick="setSpendGranularity('month',this)">月</button>
+        <button class="chip" data-gran="quarter" onclick="setSpendGranularity('quarter',this)">季</button>
+        <button class="chip" data-gran="year" onclick="setSpendGranularity('year',this)">年</button>
+      </div>
+      <div class="spend-summary">
+        <div class="spend-summary-label" id="spendCurrentLabel">—</div>
+        <div class="spend-summary-amt" id="spendCurrentTotal">NT$0</div>
+      </div>
+      <div id="spendList"></div>
+
+      <div class="section-title"><span class="bar"></span>紀念徽章</div>
+      <p class="page-sub" style="margin:-4px 0 8px;">點一下徽章，看看是哪一場成就解鎖</p>
+      <div class="badge-row">
+        <button type="button" class="badge" onclick="showBadgeInfo('🎟️','首場票根','深空樂團','南港展覽館','2025.03.22')">
+          <div class="ic">🎟️</div><div class="t">首場票根</div>
+        </button>
+        <button type="button" class="badge" onclick="showBadgeInfo('🏟️','巨蛋首戰','SEVENTEEN','高尺巨蛋','2025.11.15')">
+          <div class="ic">🏟️</div><div class="t">巨蛋首戰</div>
+        </button>
+        <button type="button" class="badge" onclick="showBadgeInfo('✈️','海外追團','IU','奧林匹克體操競技場（首爾）','2025.08.20')">
+          <div class="ic">✈️</div><div class="t">海外追團</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ TAB 4: TICKETS ============ -->
+    <div class="tab-panel active" id="tab-tickets">
+      <h1 class="page-title">購票資訊</h1>
+      <p class="page-sub">只顯示未來 7 天內的售票與抽票通知</p>
+
+      <div class="filter-row">
+        <button class="chip active" data-region="all" onclick="filterRegion('all',this)">全部</button>
+        <button class="chip" data-region="tw" onclick="filterRegion('tw',this)">國內</button>
+        <button class="chip" data-region="intl" onclick="filterRegion('intl',this)">海外</button>
+      </div>
+
+      <div class="section-title"><span class="bar"></span>倒數提醒</div>
+      <div class="filter-row">
+        <button class="chip active" data-countdown="lottery" onclick="switchCountdown('lottery',this)">🎟️ 抽票倒數</button>
+        <button class="chip" data-countdown="member" onclick="switchCountdown('member',this)">🪪 會員登記</button>
+      </div>
+
+      <div id="lotteryList">
+      <div class="lot-card" data-region="tw" data-deadline="2026-05-20T23:59:00">
+        <div class="lot-top">
+          <div>
+            <div class="lot-name">深空樂團 台北場</div>
+            <div class="lot-venue">南港展覽館 · 一般抽選</div>
+          </div>
+          <div class="lot-count d1">剩 6 小時</div>
+        </div>
+        <div class="lot-bar"><div style="width:88%"></div></div>
+        <div class="lot-foot"><span>截止 05/20 23:59</span><span>已設定通知 ✓</span></div>
+      </div>
+
+      <div class="lot-card" data-region="tw" data-deadline="2026-05-24T18:00:00">
+        <div class="lot-top">
+          <div>
+            <div class="lot-name">怕胖團 全國巡迴</div>
+            <div class="lot-venue">高雄巨蛋 · 會員先行</div>
+          </div>
+          <div class="lot-count d2">剩 3 天</div>
+        </div>
+        <div class="lot-bar"><div style="width:45%"></div></div>
+        <div class="lot-foot"><span>截止 05/24 18:00</span><span>已設定通知 ✓</span></div>
+      </div>
+
+      <div class="lot-card" data-region="intl" data-deadline="2026-05-26T23:59:00">
+        <div class="lot-top">
+          <div>
+            <div class="lot-name">SEVENTEEN 首爾演唱會</div>
+            <div class="lot-venue">高尺巨蛋 · Weverse 抽選</div>
+          </div>
+          <div class="lot-count d2">剩 5 天</div>
+        </div>
+        <div class="lot-bar"><div style="width:30%"></div></div>
+        <div class="lot-foot"><span>截止 05/26 23:59</span><span>已設定通知 ✓</span></div>
+      </div>
+      </div>
+
+      <div id="memberList" style="display:none;">
+      <div class="lot-card" data-region="tw" data-deadline="2026-05-20T22:00:00">
+        <div class="lot-top">
+          <div>
+            <div class="lot-name">深空樂團 官方應援會登記</div>
+            <div class="lot-venue">官方 App 內登記 · 會員資格審核</div>
+          </div>
+          <div class="lot-count d1">剩 4 小時</div>
+        </div>
+        <div class="lot-bar"><div style="width:88%"></div></div>
+        <div class="lot-foot"><span>截止 05/20 22:00</span><span>已設定通知 ✓</span></div>
+      </div>
+
+      <div class="lot-card" data-region="intl" data-deadline="2026-05-23T23:59:00">
+        <div class="lot-top">
+          <div>
+            <div class="lot-name">米津玄師 ファンクラブ入会</div>
+            <div class="lot-venue">官方粉絲俱樂部 · 新規入会受付</div>
+          </div>
+          <div class="lot-count d2">剩 3 天</div>
+        </div>
+        <div class="lot-bar"><div style="width:45%"></div></div>
+        <div class="lot-foot"><span>截止 05/23 23:59</span><span>已設定通知 ✓</span></div>
+      </div>
+
+      <div class="lot-card" data-region="intl" data-deadline="2026-05-28T20:00:00">
+        <div class="lot-top">
+          <div>
+            <div class="lot-name">IU Weverse 會員綁定</div>
+            <div class="lot-venue">Weverse 官方帳號 · 會員資料綁定</div>
+          </div>
+          <div class="lot-count d2">剩 7 天</div>
+        </div>
+        <div class="lot-bar"><div style="width:18%"></div></div>
+        <div class="lot-foot"><span>截止 05/28 20:00</span><span>已設定通知 ✓</span></div>
+      </div>
+      </div>
+
+      <div class="section-title-row">
+        <div class="section-title"><span class="bar"></span>售票資訊</div>
+        <button class="add-btn" onclick="openAddModal()">＋ 新增</button>
+      </div>
+
+      <div id="saleList">
+
+      <div class="sale-card" data-region="tw">
+        <div class="sale-top">
+          <span class="region-tag">🇹🇼 台灣</span>
+          <span class="platform-tag">拓元 tixCraft</span>
+        </div>
+        <div class="sale-name">告五人 台北小巨蛋加場</div>
+        <div class="sale-venue">台北小巨蛋</div>
+        <div class="sale-phase-row">
+          <span class="phase-pill member">會員先行</span>
+          <span class="phase-date">05/19 12:00</span>
+        </div>
+        <div class="sale-note">需先完成官方會員綁定，登記截止 05/18 23:59</div>
+        <div class="sale-phase-row">
+          <span class="phase-pill general">一般售票</span>
+          <span class="phase-date">05/24 12:00</span>
+        </div>
+        <div class="sale-status upcoming">● 尚未開賣</div>
+        <div class="sale-realname">🪪 實名制：自動綁定（會員資料）· 姓名＋證件號</div>
+      </div>
+
+      <div class="sale-card" data-region="tw">
+        <div class="sale-top">
+          <span class="region-tag">🇹🇼 台灣</span>
+          <span class="platform-tag">KKTIX</span>
+        </div>
+        <div class="sale-name">草東沒有派對 醜奴兒十週年</div>
+        <div class="sale-venue">Legacy Taipei</div>
+        <div class="sale-phase-row">
+          <span class="phase-pill member">會員預購</span>
+          <span class="phase-date">05/15 已開放</span>
+        </div>
+        <div class="sale-phase-row">
+          <span class="phase-pill general">一般售票</span>
+          <span class="phase-date">05/18 20:00</span>
+        </div>
+        <div class="sale-status live">● 販售中</div>
+        <div class="sale-realname none">🪪 非實名制</div>
+      </div>
+
+      <div class="sale-card" data-region="intl">
+        <div class="sale-top">
+          <span class="region-tag">🇯🇵 日本</span>
+          <span class="platform-tag">ぴあ Pia</span>
+        </div>
+        <div class="sale-name">米津玄師 追加公演</div>
+        <div class="sale-venue">大阪城ホール</div>
+        <div class="sale-phase-row">
+          <span class="phase-pill member">ファンクラブ先行</span>
+          <span class="phase-date">05/20 10:00</span>
+        </div>
+        <div class="sale-note">需持有日本官方粉絲俱樂部會員資格</div>
+        <div class="sale-status upcoming">● 尚未開賣</div>
+        <div class="sale-realname">🪪 實名制：自動綁定（會員資料）· 姓名＋證件號</div>
+      </div>
+
+      <div class="sale-card" data-region="intl">
+        <div class="sale-top">
+          <span class="region-tag">🇰🇷 韓國</span>
+          <span class="platform-tag">Yes24 Ticket</span>
+        </div>
+        <div class="sale-name">IU 首爾巡演加場</div>
+        <div class="sale-venue">奧林匹克體操競技場</div>
+        <div class="sale-phase-row">
+          <span class="phase-pill member">會員先行</span>
+          <span class="phase-date">05/21 20:00</span>
+        </div>
+        <div class="sale-note">需先申請 Yes24 會員並完成手機認證</div>
+        <div class="sale-phase-row">
+          <span class="phase-pill general">一般售票</span>
+          <span class="phase-date">05/23 20:00</span>
+        </div>
+        <div class="sale-status upcoming">● 尚未開賣</div>
+        <div class="sale-realname">🪪 實名制：自行輸入 · 姓名＋證件號</div>
+      </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-pickup">
+      <div class="section-title-row" style="margin-top:6px;">
+        <div>
+          <h1 class="page-title" style="margin-bottom:2px;">取票提醒</h1>
+          <p class="page-sub" style="margin-bottom:0;">超商、電子票、郵寄、現場取票，別漏了任何一種</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+        <button class="add-btn" onclick="openAddPickupModal()">＋ 新增取票</button>
+      </div>
+
+      <div id="pickupList">
+
+      <div class="pickup-card urgent">
+        <span class="pickup-status-tag closing">🔴 即將截止取票</span>
+        <div class="push-banner"><span class="blink-dot"></span>推播：即將截止取票</div>
+        <div class="pickup-top">
+          <div>
+            <div class="pickup-name">告五人 台北小巨蛋加場</div>
+            <div class="pickup-method">超商取票 · 7-11 ibon</div>
+          </div>
+          <a class="pickup-link" href="https://www.ibon.com.tw" target="_blank" rel="noopener">查看代碼 🔗</a>
+        </div>
+        <div class="pickup-deadline">期限 05/26 23:59 前完成取票</div>
+        <div class="pickup-showdates">演出日｜2026.05.28　取票日｜2026.05.26</div>
+        <div class="pickup-date-setting">取票日設定｜<b>開演前 2 日</b></div>
+        <div class="pickup-source"><span class="tag-self">🎫 自行搶到</span></div>
+        <div class="pickup-actions">
+          <button class="pickup-btn" onclick="markDone(this,'已加入 ✓')">📅 <span class="label">加入行事曆</span></button>
+          <button class="pickup-btn" onclick="markDone(this,'已提醒 ✓')">🔔 <span class="label">設定提醒</span></button>
+        </div>
+      </div>
+
+      <div class="pickup-card">
+        <span class="pickup-status-tag available">🟡 可取票</span>
+        <div class="pickup-top">
+          <div>
+            <div class="pickup-name">草東沒有派對 醜奴兒十週年</div>
+            <div class="pickup-method">電子票 · KKTIX App 內顯示 QR Code</div>
+          </div>
+          <a class="pickup-link" href="#" data-sellerlink="https://line.me/ti/p/orindy_music" data-pickupdate="2026-05-20" onclick="return handlePickupLinkClick(this)">前往索取 🔗</a>
+        </div>
+        <div class="pickup-deadline">免臨櫃取票，開演前於 App 出示即可</div>
+        <div class="pickup-showdates">演出日｜2026.05.30　取票日｜2026.05.20</div>
+        <div class="pickup-date-setting">取票日設定｜<b>立即取票</b></div>
+        <div class="pickup-source">🤝 向別人購買 · <span class="seller">IG @orindy_music</span></div>
+        <div class="pickup-actions">
+          <button class="pickup-btn" onclick="markDone(this,'已加入 ✓')">📅 <span class="label">加入行事曆</span></button>
+        </div>
+      </div>
+
+      <div class="pickup-card">
+        <span class="pickup-status-tag notopen">🟢 尚未開放取票</span>
+        <div class="pickup-top">
+          <div>
+            <div class="pickup-name">米津玄師 大阪追加公演</div>
+            <div class="pickup-method">郵寄取票 · 日本官方寄送</div>
+          </div>
+          <a class="pickup-link" href="#" onclick="return false;">查看代碼 🔗</a>
+        </div>
+        <div class="pickup-deadline">預計送達 05/25</div>
+        <div class="pickup-showdates">演出日｜2026.06.14　取票日｜2026.06.07</div>
+        <div class="pickup-date-setting">取票日設定｜<b>開演前 7 日</b></div>
+        <div class="pickup-source"><span class="tag-self">🎫 自行搶到</span></div>
+        <div class="pickup-actions">
+          <button class="pickup-btn" onclick="markDone(this,'已加入 ✓')">📅 <span class="label">加入行事曆</span></button>
+          <button class="pickup-btn" onclick="markDone(this,'已提醒 ✓')">🔔 <span class="label">設定提醒</span></button>
+        </div>
+      </div>
+
+      <div class="pickup-card">
+        <span class="pickup-status-tag available">🟡 可取票</span>
+        <div class="pickup-top">
+          <div>
+            <div class="pickup-name">IU 首爾巡演加場</div>
+            <div class="pickup-method">現場劃位取票 · 售票窗口</div>
+          </div>
+          <a class="pickup-link" href="#" data-sellerlink="https://www.threads.net/@iu_fan_seoul" data-pickupdate="2026-05-22" onclick="return handlePickupLinkClick(this)">前往索取 🔗</a>
+        </div>
+        <div class="pickup-deadline">演唱會當天憑證件於窗口領取</div>
+        <div class="pickup-showdates">演出日｜2026.05.27　取票日｜2026.05.22</div>
+        <div class="pickup-date-setting">取票日設定｜<b>開演前 5 日</b></div>
+        <div class="pickup-source">🤝 向別人購買 · <span class="seller">Threads @iu_fan_seoul</span></div>
+        <div class="pickup-actions">
+          <button class="pickup-btn" onclick="markDone(this,'已加入 ✓')">📅 <span class="label">加入行事曆</span></button>
+          <button class="pickup-btn" onclick="markDone(this,'已提醒 ✓')">🔔 <span class="label">設定提醒</span></button>
+        </div>
+      </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ ADD SALE INFO MODAL ============ -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <span class="modal-title">新增售票資訊</span>
+        <button class="modal-close" onclick="closeAddModal()">✕</button>
+      </div>
+      <form id="addSaleForm" onsubmit="submitAddSale(event)">
+        <div class="field-label">地區</div>
+        <select class="modal-input" id="addRegion">
+          <option value="tw|🇹🇼 台灣">🇹🇼 台灣（國內）</option>
+          <option value="intl|🇯🇵 日本">🇯🇵 日本（海外）</option>
+          <option value="intl|🇰🇷 韓國">🇰🇷 韓國（海外）</option>
+          <option value="intl|🇺🇸 美國">🇺🇸 美國（海外）</option>
+          <option value="intl|🌏 其他">🌏 其他（海外）</option>
+        </select>
+
+        <div class="field-label">演出名稱</div>
+        <input class="modal-input" id="addName" type="text" placeholder="例如：告五人 台北小巨蛋加場" required>
+
+        <div class="field-label">場館</div>
+        <input class="modal-input" id="addVenue" type="text" placeholder="例如：台北小巨蛋">
+
+        <div class="field-label">售票平台</div>
+        <input class="modal-input" id="addPlatform" type="text" placeholder="例如：拓元 tixCraft">
+
+        <div class="field-label">售票階段</div>
+        <select class="modal-input" id="addPhase">
+          <option value="member">會員先行</option>
+          <option value="general">一般售票</option>
+        </select>
+
+        <div class="field-label">開賣時間</div>
+        <input class="modal-input" id="addDate" type="text" placeholder="例如：05/25 12:00">
+
+        <div class="field-label">備註（選填）</div>
+        <input class="modal-input" id="addNote" type="text" placeholder="例如：需先完成官方會員綁定">
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="addRealName" onchange="toggleRealNameFields()">
+          <span>需要實名制驗證</span>
+        </label>
+
+        <div id="realNameFields" style="display:none;">
+          <div class="field-label">綁定方式</div>
+          <select class="modal-input" id="addRealNameMethod">
+            <option value="自動綁定（會員資料）">自動綁定（會員資料）</option>
+            <option value="自行輸入">自行輸入</option>
+          </select>
+
+          <div class="field-label">驗證資料</div>
+          <select class="modal-input" id="addRealNameData">
+            <option value="姓名">姓名</option>
+            <option value="證件號">證件號</option>
+            <option value="姓名＋證件號">姓名＋證件號</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top:20px;">新增到售票資訊</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ DIARY DETAIL MODAL (查看更多) ============ -->
+  <div class="modal-overlay" id="diaryDetailModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <span class="modal-title" id="detailTourTitle">—</span>
+        <button class="modal-close" onclick="closeDiaryDetail()">✕</button>
+      </div>
+      <div class="detail-poster" id="detailPoster"></div>
+      <div class="badge-detail-row"><span>巡演場次</span><span id="detailArtist">—</span></div>
+      <div class="badge-detail-row"><span>日期</span><span id="detailDate">—</span></div>
+      <div class="badge-detail-row"><span>場館</span><span id="detailVenue">—</span></div>
+      <div class="badge-detail-row"><span>座位</span><span id="detailSeat">—</span></div>
+      <div class="badge-detail-row"><span>票價</span><span id="detailAmount">—</span></div>
+      <div class="badge-detail-row"><span>購票系統</span><span id="detailTicketSystem">—</span></div>
+      <div class="badge-detail-row"><span>購票手續費</span><span id="detailFee">—</span></div>
+      <div class="field-label" style="margin-top:12px;">歌單</div>
+      <div class="detail-setlist-box" id="detailSetlist">—</div>
+    </div>
+  </div>
+
+  <!-- ============ BADGE DETAIL MODAL ============ -->
+  <div class="modal-overlay" id="badgeModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <span class="modal-title" id="badgeModalTitle">紀念徽章</span>
+        <button class="modal-close" onclick="closeBadgeModal()">✕</button>
+      </div>
+      <div class="badge-detail-icon" id="badgeModalIcon">🎟️</div>
+      <div class="badge-detail-row"><span>演出</span><span id="badgeModalTour">—</span></div>
+      <div class="badge-detail-row"><span>場館</span><span id="badgeModalVenue">—</span></div>
+      <div class="badge-detail-row"><span>日期</span><span id="badgeModalDate">—</span></div>
+    </div>
+  </div>
+
+  <!-- ============ ADD PICKUP MODAL ============ -->
+  <div class="modal-overlay" id="pickupModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <span class="modal-title">新增取票提醒</span>
+        <button class="modal-close" onclick="closeAddPickupModal()">✕</button>
+      </div>
+      <form id="addPickupForm" onsubmit="submitAddPickup(event)">
+        <div class="field-label">演出名稱</div>
+        <input class="modal-input" id="pickName" type="text" placeholder="例如：怕胖團 高雄巨蛋場" required>
+
+        <div class="field-label">取票方式</div>
+        <input class="modal-input" id="pickMethod" type="text" placeholder="例如：超商取票 · 7-11 ibon">
+
+        <div class="field-label">票券來源</div>
+        <select class="modal-input" id="pickSource" onchange="toggleSellerFields()">
+          <option value="self">自行搶到</option>
+          <option value="other">向別人購買</option>
+        </select>
+
+        <div id="sellerFields" style="display:none;">
+          <div class="field-label">對方社群平台</div>
+          <select class="modal-input" id="pickSellerPlatform">
+            <option value="Instagram">Instagram</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Line">Line</option>
+            <option value="Threads">Threads</option>
+            <option value="其他">其他</option>
+          </select>
+
+          <div class="field-label">對方名稱／帳號</div>
+          <input class="modal-input" id="pickSellerName" type="text" placeholder="例如：@orindy_music">
+
+          <div class="field-label">貼上連結（取票日到後可直接前往索取）</div>
+          <input class="modal-input" id="pickSellerLink" type="url" placeholder="例如：https://line.me/ti/p/xxxx">
+        </div>
+
+        <div class="field-label">活動開演日期</div>
+        <input class="modal-input" id="pickShowDate" type="date" onchange="calcPickupDate()">
+
+        <div class="field-label">取票日設定</div>
+        <select class="modal-input" id="pickDateSetting" onchange="calcPickupDate()">
+          <option value="開演前 7 日">開演前 7 日</option>
+          <option value="開演前 5 日">開演前 5 日</option>
+          <option value="開演前 2 日">開演前 2 日</option>
+          <option value="立即取票">立即取票</option>
+        </select>
+
+        <div class="field-label">取票日（依開演日期與取票日設定自動帶入，可手動調整）</div>
+        <input class="modal-input" id="pickPickupDate" type="date">
+
+        <div class="field-label">取票狀態</div>
+        <select class="modal-input" id="pickStatus">
+          <option value="notopen">🟢 尚未開放取票</option>
+          <option value="available">🟡 可取票</option>
+          <option value="closing">🔴 即將截止取票</option>
+        </select>
+
+        <div class="field-label">取票期限備註（選填）</div>
+        <input class="modal-input" id="pickDeadlineNote" type="text" placeholder="例如：期限 05/26 23:59 前完成取票">
+
+        <button type="submit" class="btn-primary" style="margin-top:6px;">新增到取票提醒</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="navbar">
+    <button class="navbtn active" data-tab="tickets" onclick="showTab('tickets')">
+      <span class="ic">🎫</span>購票
+    </button>
+    <button class="navbtn" data-tab="diary" onclick="showTab('diary')">
+      <span class="ic">📔</span>日記
+    </button>
+    <button class="navbtn" data-tab="add" onclick="showTab('add')">
+      <span class="ic">📷</span>新增
+    </button>
+    <button class="navbtn" data-tab="stats" onclick="showTab('stats')">
+      <span class="ic">📊</span>統計
+    </button>
+    <button class="navbtn" data-tab="pickup" onclick="showTab('pickup')">
+      <span class="ic">📦</span>取票
+    </button>
+  </div>
+</div>
+
+<script>
+function showTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelector('.navbtn[data-tab="'+name+'"]').classList.add('active');
+  document.getElementById('screenLabel').textContent =
+    {diary:'DIARY', add:'SCAN', stats:'STATS', tickets:'TICKETS', pickup:'PICKUP'}[name];
+  document.querySelector('.screen').scrollTop = 0;
+}
+
+function filterRegion(region, btn){
+  document.querySelectorAll('#tab-tickets .chip[data-region]').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#tab-tickets .lot-card, #tab-tickets .sale-card').forEach(card=>{
+    const r = card.getAttribute('data-region');
+    card.style.display = (region==='all' || r===region) ? '' : 'none';
+  });
+}
+
+function markDone(btn, doneLabel){
+  if(btn.classList.contains('active')) return;
+  btn.classList.add('active');
+  btn.querySelector('.label').textContent = doneLabel;
+}
+
+function openDiaryDetail(btn){
+  const card = btn.closest('.flip-card');
+  const d = card.dataset;
+  document.getElementById('detailTourTitle').textContent = d.tour || '未命名演出';
+  document.getElementById('detailArtist').textContent = d.artist || '—';
+  document.getElementById('detailDate').textContent = d.date || '—';
+  document.getElementById('detailVenue').textContent = d.venue || '—';
+  document.getElementById('detailSeat').textContent = d.seat || '—';
+  document.getElementById('detailAmount').textContent = d.amount ? fmtMoney(Number(d.amount)) : '—';
+  document.getElementById('detailTicketSystem').textContent = d.ticketsystem || '—';
+  document.getElementById('detailFee').textContent = fmtMoney(Number(d.fee || 0));
+  document.getElementById('detailSetlist').textContent = d.setlist || '尚無歌單紀錄';
+
+  // 複製正面圖片（自訂海報圖或色塊佔位）到詳細頁
+  const front = card.querySelector('.flip-front');
+  const posterEl = document.getElementById('detailPoster');
+  posterEl.style.cssText = front.style.cssText;
+  const phClass = Array.from(front.classList).find(c => c.startsWith('ph'));
+  posterEl.className = 'detail-poster' + (phClass ? ' ' + phClass : '');
+
+  document.getElementById('diaryDetailModal').classList.add('open');
+}
+function closeDiaryDetail(){
+  document.getElementById('diaryDetailModal').classList.remove('open');
+}
+
+function showBadgeInfo(icon, title, tour, venue, date){
+  document.getElementById('badgeModalIcon').textContent = icon;
+  document.getElementById('badgeModalTitle').textContent = title;
+  document.getElementById('badgeModalTour').textContent = tour;
+  document.getElementById('badgeModalVenue').textContent = venue;
+  document.getElementById('badgeModalDate').textContent = date;
+  document.getElementById('badgeModal').classList.add('open');
+}
+function closeBadgeModal(){
+  document.getElementById('badgeModal').classList.remove('open');
+}
+
+function openAddModal(){
+  document.getElementById('addModal').classList.add('open');
+}
+function closeAddModal(){
+  document.getElementById('addModal').classList.remove('open');
+  document.getElementById('addSaleForm').reset();
+  document.getElementById('realNameFields').style.display = 'none';
+}
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function toggleRealNameFields(){
+  const checked = document.getElementById('addRealName').checked;
+  document.getElementById('realNameFields').style.display = checked ? 'block' : 'none';
+}
+
+/* ---------- 新增取票提醒 ---------- */
+function openAddPickupModal(){
+  document.getElementById('pickupModal').classList.add('open');
+}
+function closeAddPickupModal(){
+  document.getElementById('pickupModal').classList.remove('open');
+  document.getElementById('addPickupForm').reset();
+  document.getElementById('sellerFields').style.display = 'none';
+  document.getElementById('pickPickupDate').value = '';
+}
+function toggleSellerFields(){
+  const isOther = document.getElementById('pickSource').value === 'other';
+  document.getElementById('sellerFields').style.display = isOther ? 'block' : 'none';
+}
+
+// 依「活動開演日期」與「取票日設定」自動帶入取票日（開演前N日 = 開演日 - N）
+const pickupOffsetDays = {'開演前 7 日':7, '開演前 5 日':5, '開演前 2 日':2, '立即取票':0};
+
+function calcPickupDate(){
+  const showDateStr = document.getElementById('pickShowDate').value;
+  const setting = document.getElementById('pickDateSetting').value;
+  const pickupInput = document.getElementById('pickPickupDate');
+
+  if(setting === '立即取票'){
+    // 立即取票：以目前時間為取票日，與開演日無關
+    pickupInput.value = COUNTDOWN_NOW.toISOString().slice(0,10);
+    return;
+  }
+  if(!showDateStr){ pickupInput.value = ''; return; }
+
+  const offset = pickupOffsetDays[setting] || 0;
+  const showDate = new Date(showDateStr + 'T00:00:00');
+  showDate.setDate(showDate.getDate() - offset);
+  pickupInput.value = showDate.toISOString().slice(0,10);
+}
+
+// 「向別人購買」的取票連結：取票日到了才能點擊前往索取
+function handlePickupLinkClick(a){
+  const sellerLink = a.getAttribute('data-sellerlink');
+  const pickupDateStr = a.getAttribute('data-pickupdate');
+  if(!sellerLink) return false;
+  if(pickupDateStr){
+    const pickupDate = new Date(pickupDateStr + 'T00:00:00');
+    if(pickupDate > COUNTDOWN_NOW){
+      alert('取票日尚未到，請於 ' + pickupDateStr.replace(/-/g,'.') + ' 之後再前往索取');
+      return false;
+    }
+  }
+  window.open(sellerLink, '_blank', 'noopener');
+  return false;
+}
+
+// 依取票日是否已到，更新所有「向別人購買」連結的可點擊狀態
+function refreshPickupLinkStates(){
+  document.querySelectorAll('#tab-pickup .pickup-link[data-sellerlink]').forEach(a=>{
+    const pickupDateStr = a.getAttribute('data-pickupdate');
+    const arrived = !pickupDateStr || (new Date(pickupDateStr + 'T00:00:00') <= COUNTDOWN_NOW);
+    a.classList.toggle('disabled', !arrived);
+  });
+}
+
+const pickupStatusMeta = {
+  notopen:   {cls:'notopen',   label:'🟢 尚未開放取票'},
+  available: {cls:'available', label:'🟡 可取票'},
+  closing:   {cls:'closing',   label:'🔴 即將截止取票'}
+};
+
+function submitAddPickup(e){
+  e.preventDefault();
+  const name = escapeHtml(document.getElementById('pickName').value || '未命名場次');
+  const method = escapeHtml(document.getElementById('pickMethod').value || '取票方式未定');
+  const source = document.getElementById('pickSource').value;
+  const sellerPlatform = escapeHtml(document.getElementById('pickSellerPlatform').value);
+  const sellerName = escapeHtml(document.getElementById('pickSellerName').value.trim());
+  const sellerLink = document.getElementById('pickSellerLink').value.trim();
+  const showDate = document.getElementById('pickShowDate').value;
+  const dateSetting = escapeHtml(document.getElementById('pickDateSetting').value);
+  const pickupDate = document.getElementById('pickPickupDate').value;
+  const statusKey = document.getElementById('pickStatus').value;
+  const statusInfo = pickupStatusMeta[statusKey] || pickupStatusMeta.notopen;
+  const deadlineNote = escapeHtml(document.getElementById('pickDeadlineNote').value.trim());
+
+  const showDateDisplay = showDate ? showDate.replace(/-/g,'.') : '未設定';
+  const pickupDateDisplay = pickupDate ? pickupDate.replace(/-/g,'.') : '未設定';
+
+  const buttonLabel = source === 'other' ? '前往索取 🔗' : '查看代碼 🔗';
+  const linkAttrs = (source === 'other' && sellerLink)
+    ? `data-sellerlink="${escapeHtml(sellerLink)}" data-pickupdate="${pickupDate}" onclick="return handlePickupLinkClick(this)"`
+    : `onclick="return false;"`;
+  const sourceHtml = source === 'other'
+    ? `🤝 向別人購買 · <span class="seller">${sellerPlatform}${sellerName ? ' @' + sellerName.replace(/^@/, '') : ''}</span>`
+    : `<span class="tag-self">🎫 自行搶到</span>`;
+
+  const card = document.createElement('div');
+  card.className = 'pickup-card';
+  card.innerHTML = `
+    <span class="pickup-status-tag ${statusInfo.cls}">${statusInfo.label}</span>
+    <div class="pickup-top">
+      <div>
+        <div class="pickup-name">${name}</div>
+        <div class="pickup-method">${method}</div>
+      </div>
+      <a class="pickup-link" href="#" ${linkAttrs}>${buttonLabel}</a>
+    </div>
+    ${deadlineNote ? `<div class="pickup-deadline">${deadlineNote}</div>` : ''}
+    <div class="pickup-showdates">演出日｜${showDateDisplay}　取票日｜${pickupDateDisplay}</div>
+    <div class="pickup-date-setting">取票日設定｜<b>${dateSetting}</b></div>
+    <div class="pickup-source">${sourceHtml}</div>
+    <div class="pickup-actions">
+      <button class="pickup-btn" onclick="markDone(this,'已加入 ✓')">📅 <span class="label">加入行事曆</span></button>
+      <button class="pickup-btn" onclick="markDone(this,'已提醒 ✓')">🔔 <span class="label">設定提醒</span></button>
+    </div>
+  `;
+  document.getElementById('pickupList').prepend(card);
+  refreshPickupLinkStates();
+
+  closeAddPickupModal();
+}
+
+function submitAddSale(e){
+  e.preventDefault();
+  const [region, regionLabel] = document.getElementById('addRegion').value.split('|');
+  const name = escapeHtml(document.getElementById('addName').value || '未命名場次');
+  const venue = escapeHtml(document.getElementById('addVenue').value);
+  const platform = escapeHtml(document.getElementById('addPlatform').value || '未指定平台');
+  const phase = document.getElementById('addPhase').value;
+  const phaseLabel = phase === 'member' ? '會員先行' : '一般售票';
+  const date = escapeHtml(document.getElementById('addDate').value || '時間未定');
+  const note = escapeHtml(document.getElementById('addNote').value);
+  const needsRealName = document.getElementById('addRealName').checked;
+  const realNameMethod = document.getElementById('addRealNameMethod').value;
+  const realNameData = document.getElementById('addRealNameData').value;
+
+  const card = document.createElement('div');
+  card.className = 'sale-card';
+  card.setAttribute('data-region', region);
+  card.innerHTML = `
+    <div class="sale-top">
+      <span class="region-tag">${regionLabel}</span>
+      <span class="platform-tag">${platform}</span>
+    </div>
+    <div class="sale-name">${name}</div>
+    ${venue ? `<div class="sale-venue">${venue}</div>` : ''}
+    <div class="sale-phase-row">
+      <span class="phase-pill ${phase}">${phaseLabel}</span>
+      <span class="phase-date">${date}</span>
+    </div>
+    ${note ? `<div class="sale-note">${note}</div>` : ''}
+    <div class="sale-status upcoming">● 尚未開賣</div>
+    ${needsRealName
+      ? `<div class="sale-realname">🪪 實名制：${realNameMethod} · ${realNameData}</div>`
+      : `<div class="sale-realname none">🪪 非實名制</div>`}
+  `;
+  document.getElementById('saleList').prepend(card);
+
+  const activeChip = document.querySelector('#tab-tickets .filter-row .chip[data-region].active');
+  if(activeChip) filterRegion(activeChip.getAttribute('data-region'), activeChip);
+
+  closeAddModal();
+}
+
+/* ================= 倒數提醒（抽票倒數 / 會員登記） ================= */
+
+// 展示用的「目前時間」基準點，對應日記/售票資料中的假想時間點
+const COUNTDOWN_NOW = new Date('2026-05-20T18:00:00');
+
+function switchCountdown(type, btn){
+  document.querySelectorAll('#tab-tickets .filter-row .chip[data-countdown]').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('lotteryList').style.display = type === 'lottery' ? '' : 'none';
+  document.getElementById('memberList').style.display = type === 'member' ? '' : 'none';
+}
+
+function formatRemaining(ms){
+  if(ms <= 0) return {label:'已截止', critical:false};
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = totalMinutes / 60;
+  if(hours < 12){
+    const h = Math.floor(hours);
+    const m = totalMinutes % 60;
+    const label = h > 0 ? `剩 ${h} 小時${m > 0 ? m + '分' : ''}` : `剩 ${m} 分鐘`;
+    return {label, critical:true};
+  }
+  if(hours < 24) return {label:`剩 ${Math.floor(hours)} 小時`, critical:false};
+  return {label:`剩 ${Math.floor(hours / 24)} 天`, critical:false};
+}
+
+function updateLotteryCountdowns(){
+  document.querySelectorAll('#tab-tickets .lot-card[data-deadline]').forEach(card=>{
+    const deadline = new Date(card.getAttribute('data-deadline'));
+    const diff = deadline - COUNTDOWN_NOW;
+    const {label, critical} = formatRemaining(diff);
+
+    const countEl = card.querySelector('.lot-count');
+    if(countEl){
+      countEl.textContent = label;
+      countEl.classList.remove('d1','d2','critical');
+      countEl.classList.add(critical ? 'critical' : 'd2');
+    }
+    card.classList.toggle('critical', critical);
+
+    const footFirst = card.querySelector('.lot-foot span:first-child');
+    if(footFirst) footFirst.classList.toggle('critical-text', critical);
+  });
+}
+
+updateLotteryCountdowns();
+
+
+/* ================= 花費統計 (月 / 季 / 年) ================= */
+
+// 票根紀錄資料，每次掃描新增票根時會 push 進來（date: YYYY-MM-DD, amount: 數字）
+let ticketRecords = [
+  {tour:'告五人 Accusefive', venue:'台北大巨蛋', date:'2026-05-17', amount:5800, fee:65},
+  {tour:'米津玄師',         venue:'東京ドーム',   date:'2026-04-02', amount:6200, fee:0},
+  {tour:'怕胖團',           venue:'高雄巨蛋',     date:'2026-01-10', amount:2200, fee:45},
+  {tour:'草東沒有派對',     venue:'Legacy Taipei', date:'2026-02-28', amount:1600, fee:30},
+  {tour:'SEVENTEEN',       venue:'高尺巨蛋',     date:'2025-11-15', amount:8800, fee:120},
+  {tour:'IU',               venue:'奧林匹克體操競技場', date:'2025-08-20', amount:7600, fee:0},
+  {tour:'告五人 Accusefive', venue:'台中洲際棒球場', date:'2025-06-05', amount:3200, fee:65},
+  {tour:'深空樂團',         venue:'南港展覽館',   date:'2025-03-22', amount:2400, fee:50},
+];
+
+let currentSpendGran = 'month';
+
+function fmtMoney(n){
+  return 'NT$' + Math.round(n || 0).toLocaleString('zh-Hant-TW');
+}
+function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+
+function periodInfo(dateStr, gran){
+  const d = new Date(dateStr + 'T00:00:00');
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  if(gran === 'year')    return {key:'' + y, label: y + ' 年'};
+  if(gran === 'quarter'){ const q = Math.floor((m - 1) / 3) + 1; return {key: y + '-Q' + q, label: y + ' Q' + q}; }
+  return {key: y + '-' + pad2(m), label: y + '.' + pad2(m)};
+}
+
+function aggregateSpend(gran){
+  const map = new Map();
+  ticketRecords.forEach(r=>{
+    if(!r.date) return;
+    const {key, label} = periodInfo(r.date, gran);
+    if(!map.has(key)) map.set(key, {key, label, total:0, count:0});
+    const o = map.get(key);
+    o.total += (r.amount || 0) + (r.fee || 0);
+    o.count += 1;
+  });
+  return Array.from(map.values()).sort((a,b)=> b.key.localeCompare(a.key));
+}
+
+function granLabelSuffix(gran){
+  return gran === 'month' ? '本月花費' : gran === 'quarter' ? '本季花費' : '本年花費';
+}
+
+function renderSpendStats(){
+  const rows = aggregateSpend(currentSpendGran);
+  const listEl = document.getElementById('spendList');
+  const totalEl = document.getElementById('spendCurrentTotal');
+  const labelEl = document.getElementById('spendCurrentLabel');
+  if(!listEl || !totalEl || !labelEl) return;
+
+  if(rows.length === 0){
+    listEl.innerHTML = '<div class="spend-meta">尚無花費紀錄</div>';
+    totalEl.textContent = 'NT$0';
+    labelEl.textContent = '—';
+    return;
+  }
+
+  const current = rows[0];
+  totalEl.textContent = fmtMoney(current.total);
+  labelEl.textContent = current.label + ' ' + granLabelSuffix(currentSpendGran);
+
+  const maxVal = Math.max(...rows.map(r=>r.total), 1);
+  listEl.innerHTML = rows.map(r=>`
+    <div class="spend-row">
+      <div class="spend-row-top"><span class="spend-period">${r.label}</span><span class="spend-amt">${fmtMoney(r.total)}</span></div>
+      <div class="spend-bar"><div style="width:${Math.max(6, Math.round(r.total / maxVal * 100))}%"></div></div>
+      <div class="spend-meta">${r.count} 場</div>
+    </div>
+  `).join('');
+
+  refreshAllTimeTotal();
+}
+
+function setSpendGranularity(gran, btn){
+  currentSpendGran = gran;
+  document.querySelectorAll('#tab-stats .filter-row .chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  renderSpendStats();
+}
+
+function refreshAllTimeTotal(){
+  const el = document.getElementById('spendAllTimeTotal');
+  if(!el) return;
+  const total = ticketRecords.reduce((s,r)=> s + (r.amount || 0) + (r.fee || 0), 0);
+  el.textContent = fmtMoney(total);
+}
+
+// ---- 演唱會海報 / 現場紀錄 圖片上傳（各自獨立） ----
+let uploadedPosterDataUrl = null;
+let uploadedLiveDataUrl = null;
+let phCycleIndex = 0;
+const phClasses = ['ph1','ph2','ph3','ph4','ph5'];
+
+function handleImageUpload(e, kind){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const dataUrl = ev.target.result;
+    if(kind === 'poster'){
+      uploadedPosterDataUrl = dataUrl;
+      document.getElementById('posterThumb').style.backgroundImage = `url(${dataUrl})`;
+      document.getElementById('posterThumb').textContent = '';
+      document.getElementById('posterFileName').textContent = file.name;
+    } else {
+      uploadedLiveDataUrl = dataUrl;
+      document.getElementById('liveThumb').style.backgroundImage = `url(${dataUrl})`;
+      document.getElementById('liveThumb').textContent = '';
+      document.getElementById('liveFileName').textContent = file.name;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetUploadBoxes(){
+  uploadedPosterDataUrl = null;
+  uploadedLiveDataUrl = null;
+  const pt = document.getElementById('posterThumb'); if(pt){ pt.style.backgroundImage=''; pt.textContent='🖼️'; }
+  const lt = document.getElementById('liveThumb'); if(lt){ lt.style.backgroundImage=''; lt.textContent='📸'; }
+  const pf = document.getElementById('posterFileName'); if(pf) pf.textContent = '尚未選擇圖片';
+  const lf = document.getElementById('liveFileName'); if(lf) lf.textContent = '尚未選擇圖片';
+  document.getElementById('posterUpload').value = '';
+  document.getElementById('livePhotoUpload').value = '';
+}
+
+function toggleCustomTicketSystem(){
+  const isOther = document.getElementById('scanTicketSystem').value === '其他';
+  document.getElementById('customTicketSystemRow').style.display = isOther ? 'flex' : 'none';
+}
+
+function submitScanTicket(){
+  const tour = document.getElementById('scanTour').value.trim() || '未命名演出';
+  const artist = document.getElementById('scanArtist').value.trim();
+  const dateRaw = document.getElementById('scanDate').value;
+  const venue = document.getElementById('scanVenue').value.trim();
+  const seat = document.getElementById('scanSeat').value.trim();
+  const setlist = document.getElementById('scanSetlist').value.trim();
+  const ticketSystemSelect = document.getElementById('scanTicketSystem').value;
+  const ticketSystem = ticketSystemSelect === '其他'
+    ? (document.getElementById('scanTicketSystemOther').value.trim() || '其他')
+    : ticketSystemSelect;
+  const fee = Math.max(0, Number(String(document.getElementById('scanFee').value).replace(/[^\d.]/g,'')) || 0);
+  const amount = Math.max(0, Number(String(document.getElementById('scanAmount').value).replace(/[^\d.]/g,'')) || 0);
+
+  const date = dateRaw || new Date().toISOString().slice(0,10);
+  const dateDisplay = date.replace(/-/g, '.');
+
+  // 記錄進花費統計資料（含購票手續費）
+  ticketRecords.push({tour, venue, date, amount, fee});
+
+  // 決定卡片正面圖片：優先使用現場紀錄照片，其次演唱會海報，都沒有則用色塊佔位
+  let frontStyle = '';
+  let frontClass = '';
+  if(uploadedLiveDataUrl){
+    frontStyle = `style="background-image:url('${uploadedLiveDataUrl}')"`;
+  } else if(uploadedPosterDataUrl){
+    frontStyle = `style="background-image:url('${uploadedPosterDataUrl}')"`;
+  } else {
+    frontClass = ' ' + phClasses[phCycleIndex % phClasses.length];
+    phCycleIndex++;
+  }
+
+  const escTour = escapeHtml(tour);
+  const escArtist = escapeHtml(artist);
+  const escVenue = escapeHtml(venue);
+  const escSeat = escapeHtml(seat);
+  const escSetlist = escapeHtml(setlist);
+  const escTicketSystem = escapeHtml(ticketSystem);
+
+  // 加入日記卡片（統一顯示海報，翻轉看標題／日期／地點，查看更多看全部資訊）
+  const card = document.createElement('div');
+  card.className = 'flip-card';
+  card.setAttribute('onclick', "this.classList.toggle('flipped')");
+  card.setAttribute('data-tour', escTour);
+  card.setAttribute('data-artist', escArtist);
+  card.setAttribute('data-date', dateDisplay);
+  card.setAttribute('data-venue', escVenue || '場館未定');
+  card.setAttribute('data-seat', escSeat);
+  card.setAttribute('data-amount', String(amount));
+  card.setAttribute('data-fee', String(fee));
+  card.setAttribute('data-ticketsystem', escTicketSystem);
+  card.setAttribute('data-setlist', escSetlist);
+  card.innerHTML = `
+    <div class="flip-inner">
+      <div class="flip-face flip-front${frontClass}" ${frontStyle}></div>
+      <div class="flip-face flip-back">
+        <div class="back-tour">${escTour}</div>
+        <div class="back-meta">${dateDisplay}<br>${escVenue || '場館未定'}</div>
+        <button class="back-more-btn" onclick="event.stopPropagation(); openDiaryDetail(this)">查看更多</button>
+      </div>
+    </div>
+  `;
+  const diaryList = document.getElementById('diaryList');
+  if(diaryList) diaryList.prepend(card);
+
+  renderSpendStats();
+
+  // 重置掃描欄位與圖片上傳
+  document.getElementById('scanTour').value = '';
+  document.getElementById('scanArtist').value = '';
+  document.getElementById('scanDate').value = '';
+  document.getElementById('scanVenue').value = '';
+  document.getElementById('scanSeat').value = '';
+  document.getElementById('scanSetlist').value = '';
+  document.getElementById('scanTicketSystem').value = '拓元 tixCraft';
+  document.getElementById('scanTicketSystemOther').value = '';
+  document.getElementById('customTicketSystemRow').style.display = 'none';
+  document.getElementById('scanFee').value = '';
+  document.getElementById('scanAmount').value = '';
+  resetUploadBoxes();
+
+  showTab('diary');
+}
+
+renderSpendStats();
+refreshPickupLinkStates();
+</script>
+
+</body>
+</html>
